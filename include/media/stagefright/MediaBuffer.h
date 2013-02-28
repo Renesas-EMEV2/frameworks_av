@@ -85,6 +85,8 @@ public:
 
     int refcount() const;
 
+    void renesas_reset(void *data, size_t size);
+
 protected:
     virtual ~MediaBuffer();
 

@@ -200,4 +200,11 @@ MediaBuffer *MediaBuffer::clone() {
     return buffer;
 }
 
+void MediaBuffer::renesas_reset(void *data, size_t size)
+{
+    mData = data;
+    mSize = size;
+    return ;
+}
+
 }  // namespace android

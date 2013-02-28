@@ -165,9 +165,11 @@ void SoftwareRenderer::render(
                 buf->stride, buf->height,
                 0, 0, mCropWidth - 1, mCropHeight - 1);
     } else if (mColorFormat == OMX_COLOR_FormatYUV420Planar) {
+        int32_t renWidth = ALIGN(mWidth,16);
+        int32_t renHeight = ALIGN(mHeight,32);
         const uint8_t *src_y = (const uint8_t *)data;
-        const uint8_t *src_u = (const uint8_t *)data + mWidth * mHeight;
-        const uint8_t *src_v = src_u + (mWidth / 2 * mHeight / 2);
+        const uint8_t *src_u = (const uint8_t *)data + renWidth * renHeight;
+        const uint8_t *src_v = src_u + (renWidth / 2 * renHeight / 2);
 
         uint8_t *dst_y = (uint8_t *)dst;
         size_t dst_y_size = buf->stride * buf->height;
@@ -179,7 +181,7 @@ void SoftwareRenderer::render(
         for (int y = 0; y < mCropHeight; ++y) {
             memcpy(dst_y, src_y, mCropWidth);
 
-            src_y += mWidth;
+            src_y += renWidth;
             dst_y += buf->stride;
         }
 
@@ -187,8 +189,8 @@ void SoftwareRenderer::render(
             memcpy(dst_u, src_u, (mCropWidth + 1) / 2);
             memcpy(dst_v, src_v, (mCropWidth + 1) / 2);
 
-            src_u += mWidth / 2;
-            src_v += mWidth / 2;
+            src_u += renWidth / 2;
+            src_v += renWidth / 2;
             dst_u += dst_c_stride;
             dst_v += dst_c_stride;
         }

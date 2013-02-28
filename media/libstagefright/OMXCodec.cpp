@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-//#define LOG_NDEBUG 0
+/* #define LOG_NDEBUG 0 */
 #define LOG_TAG "OMXCodec"
 #include <utils/Log.h>
 
@@ -250,6 +250,12 @@ uint32_t OMXCodec::getComponentQuirks(
                 index, "output-buffers-are-unreadable")) {
         quirks |= kOutputBuffersAreUnreadable;
     }
+    if (list->codecHasQuirk(
+                index, "decoder-lies-about-number-of-channels")) {
+        quirks |= kDecoderLiesAboutNumberOfChannels;
+    }
+
+
 
     return quirks;
 }
@@ -1317,6 +1323,7 @@ OMXCodec::OMXCodec(
       mPaused(false),
       mNativeWindow(
               (!strncmp(componentName, "OMX.google.", 11)
+              || !strncmp(componentName, "OMX.RENESAS.", 12)
               || !strcmp(componentName, "OMX.Nvidia.mpeg2v.decode"))
                         ? NULL : nativeWindow) {
     mPortStatus[kPortIndexInput] = ENABLED;
@@ -2174,6 +2181,7 @@ void OMXCodec::on_message(const omx_message &msg) {
                             info->mSize);
                     info->mMediaBuffer->setObserver(this);
                 }
+                info->mMediaBuffer->renesas_reset(msg.u.extended_buffer_data.data_ptr, info->mSize);
 
                 MediaBuffer *buffer = info->mMediaBuffer;
                 bool isGraphicBuffer = buffer->graphicBuffer() != NULL;
