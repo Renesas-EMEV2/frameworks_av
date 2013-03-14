@@ -3468,12 +3468,14 @@ status_t OMXCodec::setAACFormat(
                 &profile, sizeof(profile));
 
         if (err != OK) {
-            CODEC_LOGE("setParameter('OMX_IndexParamAudioAac') failed "
+            CODEC_LOGE("(IsEncoder) setParameter('OMX_IndexParamAudioAac') failed "
                        "(err = %d)",
                        err);
             return err;
         }
+
     } else {
+
         OMX_AUDIO_PARAM_AACPROFILETYPE profile;
         InitOMXParams(&profile);
         profile.nPortIndex = kPortIndexInput;

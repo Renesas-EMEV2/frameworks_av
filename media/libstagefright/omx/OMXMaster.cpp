@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-#define LOG_NDEBUG 0
+//#define LOG_NDEBUG 0
 #define LOG_TAG "OMXMaster"
 #include <utils/Log.h>
 
@@ -44,6 +44,7 @@ OMXMaster::~OMXMaster() {
 }
 
 void OMXMaster::addVendorPlugin() {
+    ALOGI("Adding vendor plugin (libstagefrighthw)");
     addPlugin("libstagefrighthw.so");
 }
 
@@ -58,13 +59,16 @@ void OMXMaster::addPlugin(const char *libname) {
     CreateOMXPluginFunc createOMXPlugin =
         (CreateOMXPluginFunc)dlsym(
                 mVendorLibHandle, "createOMXPlugin");
+    ALOGI("after createOMXPlugin");
     if (!createOMXPlugin)
         createOMXPlugin = (CreateOMXPluginFunc)dlsym(
                 mVendorLibHandle, "_ZN7android15createOMXPluginEv");
 
+    ALOGI("after CreateOMXPluginFunc");
     if (createOMXPlugin) {
         addPlugin((*createOMXPlugin)());
     }
+
 }
 
 void OMXMaster::addPlugin(OMXPluginBase *plugin) {
@@ -86,7 +90,7 @@ void OMXMaster::addPlugin(OMXPluginBase *plugin) {
 
             continue;
         }
-
+        ALOGI("adding plugin component '%s'", name);
         mPluginByComponentName.add(name8, plugin);
     }
 

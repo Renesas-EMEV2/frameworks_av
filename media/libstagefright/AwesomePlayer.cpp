@@ -129,6 +129,7 @@ struct AwesomeNativeWindowRenderer : public AwesomeRenderer {
         int64_t timeUs;
         CHECK(buffer->meta_data()->findInt64(kKeyTime, &timeUs));
         native_window_set_buffers_timestamp(mNativeWindow.get(), timeUs * 1000);
+	ALOGI("render - before queueBuffer");
         status_t err = mNativeWindow->queueBuffer(
                 mNativeWindow.get(), buffer->graphicBuffer().get());
         if (err != 0) {
@@ -1098,9 +1099,10 @@ void AwesomePlayer::initRenderer_l() {
     // before creating a new one.
     IPCThreadState::self()->flushCommands();
 
+    ALOGI("initRenderer_l - component: %s", component);
     // Even if set scaling mode fails, we will continue anyway
     setVideoScalingMode_l(mVideoScalingMode);
-    if (USE_SURFACE_ALLOC
+    if (0 // Never for OMX.RENESAS.VIDEO.DECODER.* // USE_SURFACE_ALLOC
             && !strncmp(component, "OMX.", 4)
             && strncmp(component, "OMX.google.", 11)
             && strcmp(component, "OMX.Nvidia.mpeg2v.decode")) {
@@ -1109,12 +1111,14 @@ void AwesomePlayer::initRenderer_l() {
         // just pushes those buffers to the ANativeWindow.
         mVideoRenderer =
             new AwesomeNativeWindowRenderer(mNativeWindow, rotationDegrees);
+            ALOGI("initRenderer_l - Native renderer"); 
     } else {
         // Other decoders are instantiated locally and as a consequence
         // allocate their buffers in local address space.  This renderer
         // then performs a color conversion and copy to get the data
         // into the ANativeBuffer.
         mVideoRenderer = new AwesomeLocalRenderer(mNativeWindow, meta);
+        ALOGI("initRenderer_l - Local renderer"); 
     }
 }
 
@@ -1484,7 +1488,7 @@ status_t AwesomePlayer::initVideoDecoder(uint32_t flags) {
         flags |= OMXCodec::kEnableGrallocUsageProtected;
     }
 #endif
-    ALOGV("initVideoDecoder flags=0x%x", flags);
+    ALOGI("initVideoDecoder flags=0x%x", flags);
     mVideoSource = OMXCodec::Create(
             mClient.interface(), mVideoTrack->getFormat(),
             false, // createEncoder
@@ -1519,7 +1523,7 @@ status_t AwesomePlayer::initVideoDecoder(uint32_t flags) {
 
             stat->mDecoderName = componentName;
         }
-
+        ALOGI("initVideoDecoder - component: %s", componentName);
         static const char *kPrefix = "OMX.Nvidia.";
         static const char *kSuffix = ".decode";
         static const size_t kSuffixLength = strlen(kSuffix);
@@ -1614,7 +1618,7 @@ void AwesomePlayer::onVideoEvent() {
     if (!mVideoBuffer) {
         MediaSource::ReadOptions options;
         if (mSeeking != NO_SEEK) {
-            ALOGV("seeking to %lld us (%.2f secs)", mSeekTimeUs, mSeekTimeUs / 1E6);
+            ALOGI("seeking to %lld us (%.2f secs)", mSeekTimeUs, mSeekTimeUs / 1E6);
 
             options.setSeekTo(
                     mSeekTimeUs,
