@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-/* #define LOG_NDEBUG 0 */
+//#define LOG_NDEBUG 0
 #define LOG_TAG "OMXCodec"
 #include <utils/Log.h>
 
@@ -600,10 +600,16 @@ status_t OMXCodec::configureCodec(const sp<MetaData> &meta) {
         mQuirks &= ~kOutputBuffersAreUnreadable;
     }
 
+    ALOGV("mNativeWindow!=NULL:%d mIsEncoder:%d mMIME:%s mComponentName:%s",
+        (mNativeWindow!=NULL),
+	mIsEncoder,
+	mMIME,
+	mComponentName);
     if (mNativeWindow != NULL
         && !mIsEncoder
         && !strncasecmp(mMIME, "video/", 6)
         && !strncmp(mComponentName, "OMX.", 4)) {
+	ALOGV("Calling initNativeWindow");
         status_t err = initNativeWindow();
         if (err != OK) {
             return err;
@@ -2181,6 +2187,10 @@ void OMXCodec::on_message(const omx_message &msg) {
                             info->mSize);
                     info->mMediaBuffer->setObserver(this);
                 }
+                /* renesas_reset() means:
+                      info->mMediaBuffer->mData = msg.u.extended_buffer_data.data_ptr;
+                      info->mMediaBuffer->mSize = info->mSize;
+                */
                 info->mMediaBuffer->renesas_reset(msg.u.extended_buffer_data.data_ptr, info->mSize);
 
                 MediaBuffer *buffer = info->mMediaBuffer;
@@ -4274,6 +4284,7 @@ status_t OMXCodec::initNativeWindow() {
     // Enable use of a GraphicBuffer as the output for this node.  This must
     // happen before getting the IndexParamPortDefinition parameter because it
     // will affect the pixel format that the node reports.
+    ALOGV("initNativeWindow");
     status_t err = mOMX->enableGraphicBuffers(mNode, kPortIndexOutput, OMX_TRUE);
     if (err != 0) {
         return err;

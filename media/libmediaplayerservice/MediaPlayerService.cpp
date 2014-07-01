@@ -17,7 +17,7 @@
 
 // Proxy for media player implementations
 
-/* #define LOG_NDEBUG 0 */
+//#define LOG_NDEBUG 0
 #define LOG_TAG "MediaPlayerService"
 #include <utils/Log.h>
 
@@ -597,6 +597,7 @@ player_type getPlayerType(const char* url)
     if (!strncasecmp("http://", url, 7)
             || !strncasecmp("https://", url, 8)) {
         size_t len = strlen(url);
+
         if (len >= 5 && !strcasecmp(".m3u8", &url[len - 5])) {
             return NU_PLAYER;
         }

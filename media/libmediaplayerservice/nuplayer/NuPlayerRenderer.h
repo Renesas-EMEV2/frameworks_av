@@ -23,6 +23,7 @@
 namespace android {
 
 struct ABuffer;
+class SoftwareRenderer;
 
 struct NuPlayer::Renderer : public AHandler {
     Renderer(const sp<MediaPlayerBase::AudioSink> &sink,
@@ -49,6 +50,8 @@ struct NuPlayer::Renderer : public AHandler {
         kWhatFlushComplete      = 'fluC',
         kWhatPosition           = 'posi',
     };
+
+    void setSoftRenderer(SoftwareRenderer *softRenderer);
 
 protected:
     virtual ~Renderer();
@@ -77,6 +80,7 @@ private:
     static const int64_t kMinPositionUpdateDelayUs;
 
     sp<MediaPlayerBase::AudioSink> mAudioSink;
+    SoftwareRenderer *mSoftRenderer;
     sp<AMessage> mNotify;
     List<QueueEntry> mAudioQueue;
     List<QueueEntry> mVideoQueue;

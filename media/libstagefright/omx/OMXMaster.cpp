@@ -134,6 +134,7 @@ OMX_ERRORTYPE OMXMaster::makeComponentInstance(
     ssize_t index = mPluginByComponentName.indexOfKey(String8(name));
 
     if (index < 0) {
+	ALOGE("Invalid OMX component name '%s'", name);
         return OMX_ErrorInvalidComponentName;
     }
 
@@ -142,6 +143,7 @@ OMX_ERRORTYPE OMXMaster::makeComponentInstance(
         plugin->makeComponentInstance(name, callbacks, appData, component);
 
     if (err != OMX_ErrorNone) {
+        ALOGE("Failed making plugin component instance (index %ld)", index);
         return err;
     }
 

@@ -1483,6 +1483,7 @@ status_t ACodec::setupVideoEncoder(const char *mime, const sp<AMessage> &msg) {
     video_def->nSliceHeight = sliceHeight;
 
     def.nBufferSize = (video_def->nStride * video_def->nSliceHeight * 3) / 2;
+    ALOGV("default nBufferSize = %d", def.nBufferSize);
 
     float frameRate;
     if (!msg->findFloat("frame-rate", &frameRate)) {
@@ -1907,6 +1908,7 @@ status_t ACodec::setupErrorCorrectionParameters() {
 status_t ACodec::setVideoFormatOnPort(
         OMX_U32 portIndex,
         int32_t width, int32_t height, OMX_VIDEO_CODINGTYPE compressionFormat) {
+    ALOGV("setVideoFormatOnPort");
     OMX_PARAM_PORTDEFINITIONTYPE def;
     InitOMXParams(&def);
     def.nPortIndex = portIndex;
@@ -1918,10 +1920,12 @@ status_t ACodec::setVideoFormatOnPort(
 
     CHECK_EQ(err, (status_t)OK);
 
+
     if (portIndex == kPortIndexInput) {
         // XXX Need a (much) better heuristic to compute input buffer sizes.
-        const size_t X = 64 * 1024;
+        const size_t X = 128 * 1024;
         if (def.nBufferSize < X) {
+	    ALOGV("Increasing nBufferSize to %d", X);
             def.nBufferSize = X;
         }
     }
@@ -1943,7 +1947,8 @@ status_t ACodec::setVideoFormatOnPort(
 }
 
 status_t ACodec::initNativeWindow() {
-    if (mNativeWindow != NULL) {
+    ALOGV("initNativeWindow");
+    if (mNativeWindow != NULL){
         return mOMX->enableGraphicBuffers(mNode, kPortIndexOutput, OMX_TRUE);
     }
 
@@ -2539,7 +2544,6 @@ void ACodec::BaseState::onInputBufferFilled(const sp<AMessage> &msg) {
                         ALOGV("[%s] Needs to copy input data.",
                              mCodec->mComponentName.c_str());
                     }
-
                     CHECK_LE(buffer->size(), info->mData->capacity());
                     memcpy(info->mData->data(), buffer->data(), buffer->size());
                 }
@@ -2647,8 +2651,8 @@ bool ACodec::BaseState::onOMXFillBufferDone(
         int64_t timeUs,
         void *platformPrivate,
         void *dataPtr) {
-    ALOGV("[%s] onOMXFillBufferDone %p time %lld us, flags = 0x%08lx",
-         mCodec->mComponentName.c_str(), bufferID, timeUs, flags);
+    ALOGV("[%s] onOMXFillBufferDone %p time %lld us, flags = 0x%08lx, dataPtr = 0x%08lx",
+         mCodec->mComponentName.c_str(), bufferID, timeUs, flags, dataPtr);
 
     ssize_t index;
     BufferInfo *info =
@@ -2682,7 +2686,7 @@ bool ACodec::BaseState::onOMXFillBufferDone(
                 mCodec->sendFormatChange();
             }
 
-            if (mCodec->mNativeWindow == NULL) {
+            if (mCodec->mNativeWindow == NULL) { 
                 info->mData->setRange(rangeOffset, rangeLength);
             }
 
@@ -2916,7 +2920,7 @@ bool ACodec::UninitializedState::onAllocateComponent(const sp<AMessage> &msg) {
                 mime.c_str(),
                 encoder, // createEncoder
                 NULL,  // matchComponentName
-                0,     // flags
+                OMXCodec::kSoftwareCodecsOnly, // was 0, forcing SW (for live streaming)
                 &matchingCodecs,
                 &matchingCodecQuirks);
     }
@@ -3072,7 +3076,7 @@ bool ACodec::LoadedState::onMessageReceived(const sp<AMessage> &msg) {
 
 bool ACodec::LoadedState::onConfigureComponent(
         const sp<AMessage> &msg) {
-    ALOGV("onConfigureComponent");
+    ALOGV("onConfigureComponent - msg: %s", msg->debugString(1).c_str());
 
     CHECK(mCodec->mNode != NULL);
 
@@ -3084,24 +3088,25 @@ bool ACodec::LoadedState::onConfigureComponent(
     if (err != OK) {
         ALOGE("[%s] configureCodec returning error %d",
               mCodec->mComponentName.c_str(), err);
-
         mCodec->signalError(OMX_ErrorUndefined, err);
         return false;
     }
 
+    ALOGV("ComponentName: %s", mCodec->mComponentName.c_str());
     sp<RefBase> obj;
     if (msg->findObject("native-window", &obj)
-            && strncmp("OMX.google.", mCodec->mComponentName.c_str(), 11)) {
+            && strncmp("OMX.google.", mCodec->mComponentName.c_str(), 11)
+	    && strncmp("OMX.RENESAS.", mCodec->mComponentName.c_str(), 12)) {
+	ALOGV("nativeWindow creation");
         sp<NativeWindowWrapper> nativeWindow(
                 static_cast<NativeWindowWrapper *>(obj.get()));
         CHECK(nativeWindow != NULL);
         mCodec->mNativeWindow = nativeWindow->getNativeWindow();
-
         native_window_set_scaling_mode(
                 mCodec->mNativeWindow.get(),
                 NATIVE_WINDOW_SCALING_MODE_SCALE_TO_WINDOW);
+    	CHECK_EQ((status_t)OK, mCodec->initNativeWindow());
     }
-    CHECK_EQ((status_t)OK, mCodec->initNativeWindow());
 
     {
         sp<AMessage> notify = mCodec->mNotify->dup();

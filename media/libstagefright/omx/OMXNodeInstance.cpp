@@ -285,7 +285,7 @@ status_t OMXNodeInstance::enableGraphicBuffers(
             &index);
 
     if (err != OMX_ErrorNone) {
-        ALOGE("OMX_GetExtensionIndex failed");
+        ALOGE("OMX_GetExtensionIndex (index:'%x') failed", index);
 
         return StatusFromOMXError(err);
     }
